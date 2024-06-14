@@ -1,0 +1,9 @@
+#
+# See fstab(5).
+#
+# <file system>	<dir>	<type>	<options>		<dump>	<pass>
+tmpfs		/tmp	tmpfs	defaults,nosuid,nodev   0       0
+UUID=9e92859b-c7e6-4041-ae91-5244c3293da6 / ext4 defaults,noatime 0 1
+UUID=0656-94DC /boot vfat defaults 0 2
+UUID=be10af47-a9ab-4942-b61f-f3494c1a4485 /ssd ext4 nosuid,nodev,noatime 0 1
+/ssd/swapfile   none    swap    sw,nofail 0 0

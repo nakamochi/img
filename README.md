@@ -225,6 +225,7 @@ next, clone the SSD in the same way as the uSD card and reduce reserved space:
 
 generate 2 onion services, one for bitcoind and one for lnd:
 
+    mkdir /tmp/onion
     mkp224o -d /tmp/onion -n 1 b
     mkp224o -d /tmp/onion -n 1 l
 

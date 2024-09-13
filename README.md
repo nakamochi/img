@@ -228,6 +228,11 @@ generate 2 onion services, one for bitcoind and one for lnd:
     mkp224o -d /tmp/onion -n 1 b
     mkp224o -d /tmp/onion -n 1 l
 
+mount the SSD:
+
+    mkdir /ssd
+    mount /dev/sdd1 /ssd 
+
 copy the generated service directories to the SSD:
 
     cp -r /tmp/onion/b* /ssd/tor/bitcoind

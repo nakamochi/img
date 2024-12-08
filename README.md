@@ -13,7 +13,7 @@ once downloaded, mount its root partition:
 
     xz -d void-rpi-aarch64-xxx.img.xz
     cp void-rpi-aarch64-xxx.img nkm.img
-    mount -o loop -o offset=68157440 nkm.img /mnt/img
+    mount -o loop -o offset=269484032 nkm.img /mnt/img
 
 grab ndg release v0.8.1 from https://github.com/nakamochi/ndg/releases and create its system service:
 

@@ -42,7 +42,7 @@ tweak wpa supplicant settings and add a local WLAN to ssh after first boot, unle
 add an ssh pubkey to be able to login remotely, unless keyboard is attached to the device in which case no remote login is required:
 
     cd /mnt/img
-    mkdir ŗoot/.ssh
+    mkdir root/.ssh
     cat /path/to/ssh-pubkey > root/.sshd/authorized_keys
 
 unmount the image, "flash" onto a uSD card and boot the device:

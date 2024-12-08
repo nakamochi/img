@@ -52,6 +52,12 @@ unmount the image, "flash" onto a uSD card and boot the device:
 
 ### the rest of the commands are executed while in ssh session or logged in from a tty with a keyboard.
 
+fix system date/time (otherwise there will be certificate errrors):
+
+    date -s "2024-12-09" # set this to approx today date
+    xbps-install ntp
+    sv up ntpd
+
 update the system, reboot if requested and install system logging:
 
     xbps-install -Su

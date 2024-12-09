@@ -80,8 +80,7 @@ set up the SSD:
     # set the block ID matching what's in rootfiles/etc/fstab
     tune2fs /dev/sda1 -U be10af47-a9ab-4942-b61f-f3494c1a4485
     # mount
-    cat >> /etc/fstab
-    UUID=be10af47-a9ab-4942-b61f-f3494c1a4485 /ssd ext4 nosuid,nodev,noatime 0 1
+    echo "/dev/sda1 /ssd ext4 nosuid,nodev,noatime 0 1" >> /etc/fstab
     mkdir /ssd
     mount /ssd
 

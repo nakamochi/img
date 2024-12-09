@@ -129,7 +129,7 @@ set up lnd lightning configuration:
 
 generate bitcoind RPC auth credentials:
 
-    python /src/nakamochi/rpcauth.py rpc
+    python3 tools/rpcauth.py rpc
 
 replace `${rpcauth}` with the generated password and `${rpcauth_hash}` with
 the hashed value in `/home/bitcoind/mainnet.conf`.

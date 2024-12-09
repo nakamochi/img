@@ -86,11 +86,10 @@ set up the SSD:
 
 add swap:
 
-    dd if=/dev/zero of=/ssd/swapfile bs=1M count=1024
+    dd if=/dev/zero of=/ssd/swapfile bs=1M count=2048
     chmod 600 /ssd/swapfile
     mkswap /ssd/swapfile
-    cat >> /etc/fstab
-    /ssd/swapfile   none    swap    sw,nofail 0 0
+    echo "/ssd/swapfile   none    swap    sw,nofail 0 0" >> /etc/fstab
 
 verify that the whole `/etc/fstab` file matches `rootfiles/etc/fstab` and enable swap:
 

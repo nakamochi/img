@@ -153,9 +153,10 @@ set up automatic sys updates:
 import the gpg keys and bump their trust level so that future sysupdates are
 accepted:
 
-    gpg --batch --no-tty --import /ssd/sysupdates/keys/*.asc
-    for k in 2D301D2E968F0167413E4ACE540189B756BF5B12 DDB61F446A7BC3AF9ECDD92FFDE3E61750E31F2F; do
-      echo -e "trust\n5\ny\n" | gpg --batch --no-tty --command-fd 0 --expert --edit-key $k
+    for keyfile in /ssd/sysupdates/keys/*.asc; do
+        keyid="$(gpg --with-colons "$keyfile" 2>/dev/null | grep '^pub' | cut -d: -f5)"
+        gpg --import $keyfile
+        echo -e "trust\n5\ny\n" | gpg --command-fd 0 --expert --edit-key $keyid
     done
 
 enable `bitcoind` and `lnd` system services, and run sysupdates script manually

@@ -211,7 +211,7 @@ prerequisites:
 
 - an image prepared as described in the "manual uSD card image creation"
 - SSD disk used when making that uSD card image
-- [mkp224o](https://github.com/cathugger/mkp224o) tool to generate onion service keys
+- [mkp224o](https://github.com/cathugger/mkp224o) tool to generate onion service keys ([installation instructions for Ubuntu](docs/mkp224o.md#ubuntu-linux))
 - [dcfldd](https://sourceforge.net/projects/dcfldd/) tool if cloning multiple concurrently
 
 grab a new uSD card and copy the image into it:

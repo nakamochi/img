@@ -247,7 +247,7 @@ copy the generated service directories to the SSD:
 
 generate a bitcoin RPC auth:
 
-    python tools/rpcauth.py rpc
+    python3 tools/rpcauth.py rpc
 
 replace `${rpcauth}` with the generated password, `${rpcauth_hash}` with
 the password hash and `${hostname.onion}` with `cat /tmp/onion/b*/hostname`

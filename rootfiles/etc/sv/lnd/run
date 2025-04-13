@@ -1,0 +1,11 @@
+#!/bin/sh
+[ -r conf ] && . ./conf
+exec 2>&1
+# wait for OS to acquire a clock sync.
+# random date in the past: Oct 22 06:40:00 PM UTC 2023
+while [ "$(date +%s)" -lt 1698000000 ]
+do
+    echo "service start suspended until clock sync"
+    sleep 5
+done
+exec chpst -u lnd /home/lnd/lnd-linux-arm64-v0.17.4-beta/lnd -C /home/lnd/lnd.mainnet.conf 2>&1

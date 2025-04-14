@@ -3,6 +3,20 @@ jobs:
     build:
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v4
+            - name: Checkout repository
+              uses: actions/checkout@v4
             - name: Run ShellCheck
               uses: ludeeus/action-shellcheck@master
+            - name: Checkout submodules
+              run: git submodule update --init --recursive
+            - name: Install mkp224o
+              run: |
+                sudo apt install gcc libc6-dev libsodium-dev make autoconf
+                git clone https://github.com/cathugger/mkp224o
+                cd mkp224o
+                ./autogen.sh
+                ./configure
+                make
+                sudo cp mkp224o /usr/local/bin
+            - name: Run unit tests
+              run: ./test/bats/bin/bats ./test/test-finalize-nakamochi.bats

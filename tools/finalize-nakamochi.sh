@@ -35,12 +35,14 @@ patch_lnd_conf()
 run_main()
 {
     if [[ -z $2 ]]; then
-        echo "Usage: $(basename "$0") /dev/sda2 /dev/sdb1 [/mnt/usd [/mnt/ssd]]"
+        echo "Usage: $(basename "$0") [--skip-mkp224o] /dev/sda2 /dev/sdb1 [/mnt/usd [/mnt/ssd]]"
         echo "Where:"
-        echo "  /dev/sda2   - uSD card root partition (use '-' to not mount)"
-        echo "  /dev/sdb1   - SSD data partition (use '-' to not mount)"
-        echo "  /mnt/usd    - uSD card mount point / directory"
-        echo "  /mnt/ssd    - SSD mount point / directory"
+        echo "  /dev/sda2       - uSD card root partition (use '-' to not mount)"
+        echo "  /dev/sdb1       - SSD data partition (use '-' to not mount)"
+        echo "  /mnt/usd        - uSD card mount point / directory"
+        echo "  /mnt/ssd        - SSD mount point / directory"
+        echo "Options:"
+        echo "  --skip-mkp224o  - skip generating onion keys (requires them to be already present on SSD)"
         echo "Example: $(basename "$0") /dev/sdc2 /dev/sdd1"
         exit 1
     fi
@@ -50,9 +52,18 @@ run_main()
         exit 1
     fi
 
-    if ! check_exists mkp224o; then
-        echo "Error: mkp224o is not installed."
-        exit 1
+    if [[ "$1" == "--skip-mkp224o" ]]; then
+        shift
+        skip_mkp224o=1
+    else
+        skip_mkp224o=0
+    fi
+
+    if [[ "$skip_mkp224o" -eq 0 ]]; then
+        if ! check_exists mkp224o; then
+            echo "Error: mkp224o is not installed."
+            exit 1
+        fi
     fi
 
     if [[ ! -x "$(dirname "$0")/rpcauth.py" ]]; then
@@ -128,6 +139,18 @@ run_main()
         exit 1
     fi
 
+    if [[ "$skip_mkp224o" -eq 1 ]]; then
+        # check for existing onion keys
+        if [[ ! -f "$SSD_MOUNT_POINT"/tor/bitcoind/hostname ]]; then
+            echo "Error: $SSD_MOUNT_POINT/tor/bitcoind/hostname does not exist, cannot --skip-mkp224o."
+            exit 1
+        fi
+        if [[ ! -f "$SSD_MOUNT_POINT"/tor/lnd/hostname ]]; then
+            echo "Error: $SSD_MOUNT_POINT/tor/lnd/hostname does not exist, cannot --skip-mkp224o."
+            exit 1
+        fi
+    fi
+
     # check for existing lightning wallet
     if [[ -f "$SSD_MOUNT_POINT/lnd/data/chain/bitcoin/mainnet/wallet.db" ]]; then
         echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
@@ -139,7 +162,7 @@ run_main()
             rm -rf "$SSD_MOUNT_POINT"/lnd/*
             echo "done."
             echo -n "Removing wallet unlock file and clearing LND config ... "
-            rm "$USD_MOUNT_POINT"/home/lnd/walletunlock.txt
+            rm -f "$USD_MOUNT_POINT"/home/lnd/walletunlock.txt
             sed -i "s/^wallet-unlock-password-file=.*/;wallet-unlock-password-file=\/home\/lnd\/walletunlock.txt/" "$USD_MOUNT_POINT"/home/lnd/lnd.mainnet.conf
             echo "done."
         else
@@ -160,18 +183,22 @@ run_main()
     echo "$NAKAMOCHI_ID" > "$USD_MOUNT_POINT"/etc/nakamochi-id
     echo "$NAKAMOCHI_ID" > "$SSD_MOUNT_POINT"/nakamochi-id
 
-    # generate 2 onion services, one for bitcoind and one for lnd
-    echo -n "Generating onion services ... "
-    onion_tmp_dir="$(mktemp -d)"
-    mkp224o -d "$onion_tmp_dir" -n 1 b
-    mkp224o -d "$onion_tmp_dir" -n 1 l
-    echo "done."
+    if [[ "$skip_mkp224o" -eq 0 ]]; then
+        # generate 2 onion services, one for bitcoind and one for lnd
+        echo -n "Generating onion services ... "
+        onion_tmp_dir="$(mktemp -d)"
+        mkp224o -d "$onion_tmp_dir" -n 1 b
+        mkp224o -d "$onion_tmp_dir" -n 1 l
+        echo "done."
+    fi
 
     # copy the generated service directories to the SSD and fix user/group
     echo -n "Configuring onion services ... "
-    mkdir -p "$SSD_MOUNT_POINT"/tor/{bitcoind,lnd}
-    cp -r "$onion_tmp_dir"/b*/* "$SSD_MOUNT_POINT"/tor/bitcoind/
-    cp -r "$onion_tmp_dir"/l*/* "$SSD_MOUNT_POINT"/tor/lnd/
+    if [[ "$skip_mkp224o" -eq 0 ]]; then
+        mkdir -p "$SSD_MOUNT_POINT"/tor/{bitcoind,lnd}
+        cp -r "$onion_tmp_dir"/b*/* "$SSD_MOUNT_POINT"/tor/bitcoind/
+        cp -r "$onion_tmp_dir"/l*/* "$SSD_MOUNT_POINT"/tor/lnd/
+    fi
     onion_user_group="$(grep tor "$USD_MOUNT_POINT"/etc/passwd | cut -d: -f 3-4)"
     chown -R "$onion_user_group" "$SSD_MOUNT_POINT"/tor
     echo "done."

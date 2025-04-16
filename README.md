@@ -176,11 +176,9 @@ finally, adjust `/boot/config.txt` to the following:
     framebuffer_ignore_alpha=1
     dtoverlay=vc4-fkms-v3d
 
-and `/boot/cmdline.txt`, all on a single line:
+and `/boot/cmdline.txt`:
 
-    root=/dev/mmcblk0p2 rw rootwait console=ttyAMA0,115200 kgdboc=ttyAMA0,115200 \
-    console=tty6 smsc95xx.turbo_mode=N dwc_otg.lpm_enable=0 loglevel=4 \
-    elevator=noop vt.global_cursor_default=0
+    root=/dev/mmcblk0p2 rw rootwait console=ttyAMA0,115200 kgdboc=ttyAMA0,115200 console=tty6 smsc95xx.turbo_mode=N dwc_otg.lpm_enable=0 loglevel=4 elevator=noop vt.global_cursor_default=0
 
 now, reboot and ssh again into the devices. make sure all services are running.
 

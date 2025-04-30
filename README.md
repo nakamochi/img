@@ -191,7 +191,25 @@ shutdown the device with `poweroff`, plug the SD card into a PC and make an imag
 mount the image; the `offset` is the beginning of the second partition in sectors
 multiplied by the sector unit, typically 512 bytes:
 
-    mount -o loop -o offset=68157440 path/to/sdcard.img /mnt/img
+    mount -o loop -o offset=269484032 path/to/sdcard.img /mnt/img
+
+correct `offset` value changes between Void Linux releases, can be calculated by
+looking at `fdisk -l` output and then multiplying `Start` value with logical
+`Sector size`.
+
+    $ fdisk -l path/to/sdcard.img
+    Disk sdcard.img: 1.88 GiB, 2014314496 bytes, 3934208 sectors
+    Units: sectors of 1 * 512 = 512 bytes
+    Sector size (logical/physical): 512 bytes / 512 bytes
+    I/O size (minimum/optimal): 512 bytes / 512 bytes
+    Disklabel type: dos
+    Disk identifier: 0x67e94b25
+    
+    Device                        Boot  Start     End Sectors  Size Id Type
+    sdcard.img1                   *      2048  526335  524288  256M  b W95 FAT32
+    sdcard.img2                        526336 3934174 3407839  1.6G 83 Linux
+    $ echo $((526336*512))
+    269484032
 
 once mounted, clear logs, shell history, ssh keys and networks
 from `/etc/wpa/wpa_supplicant.conf`.

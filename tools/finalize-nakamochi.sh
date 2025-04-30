@@ -34,8 +34,8 @@ patch_lnd_conf()
 
 run_main()
 {
-    if [[ -z $2 ]]; then
-        echo "Usage: $(basename "$0") [--skip-mkp224o] /dev/sda2 /dev/sdb1 [/mnt/usd [/mnt/ssd]]"
+    if [[ -z $2 ]] || [[ "$1" == "--help" ]]; then
+        echo "Usage: $(basename "$0") [options] /dev/sda2 /dev/sdb1 [/mnt/usd [/mnt/ssd]]"
         echo "Where:"
         echo "  /dev/sda2       - uSD card root partition (use '-' to not mount)"
         echo "  /dev/sdb1       - SSD data partition (use '-' to not mount)"
@@ -43,6 +43,9 @@ run_main()
         echo "  /mnt/ssd        - SSD mount point / directory"
         echo "Options:"
         echo "  --skip-mkp224o  - skip generating onion keys (requires them to be already present on SSD)"
+        echo "  --test-image    - configure image for testing (allows ssh root access with password)"
+        # FixMe: --update-update is temporary hack, remove after https://github.com/nakamochi/sysupdates/pull/8 is merged.
+        echo "  --update-update - update /sysupdates/update.sh on SSD from local copy"
         echo "Example: $(basename "$0") /dev/sdc2 /dev/sdd1"
         exit 1
     fi
@@ -52,12 +55,29 @@ run_main()
         exit 1
     fi
 
-    if [[ "$1" == "--skip-mkp224o" ]]; then
-        shift
-        skip_mkp224o=1
-    else
-        skip_mkp224o=0
-    fi
+    skip_mkp224o=0
+    test_image=0
+    update_update=0
+    while [[ "$1" == --* ]]; do
+        case "$1" in
+            --skip-mkp224o)
+                skip_mkp224o=1
+                shift
+                ;;
+            --test-image)
+                test_image=1
+                shift
+                ;;
+            --update-update)
+                update_update=1
+                shift
+                ;;
+            *)
+                echo "Error: unknown option $1"
+                exit 1
+                ;;
+        esac
+    done
 
     if [[ "$skip_mkp224o" -eq 0 ]]; then
         if ! check_exists mkp224o; then
@@ -239,6 +259,33 @@ run_main()
     lnd_user_group="$(grep lnd "$USD_MOUNT_POINT"/etc/passwd | cut -d: -f 3-4)"
     chown -R "$lnd_user_group" "$SSD_MOUNT_POINT"/lnd
     echo "done."
+
+    # finalize image for testing or production
+    if [[ "$test_image" -eq 1 ]]; then
+        echo -n "Finalizing image for testing ... "
+        sed -i "s/^#?PermitRootLogin.*/PermitRootLogin yes/" "$USD_MOUNT_POINT"/etc/ssh/sshd_config
+        sed -i "s/^#?PasswordAuthentication.*/PasswordAuthentication yes/" "$USD_MOUNT_POINT"/etc/ssh/sshd_config
+        root_pass="nakamochi"
+        crypted_root_pass="$(mkpasswd "$root_pass")"
+        sed -i "s/^root:[^:]*:/root:$crypted_root_pass:/" "$USD_MOUNT_POINT"/etc/shadow
+        echo "done."
+        echo "Test image root password is $root_pass, ssh root login allowed."
+    else
+        echo -n "Finalizing image for production ... "
+        sed -i "s/^#?PermitRootLogin.*/PermitRootLogin no/" "$USD_MOUNT_POINT"/etc/ssh/sshd_config
+        sed -i "s/^#?PasswordAuthentication.*/PasswordAuthentication no/" "$USD_MOUNT_POINT"/etc/ssh/sshd_config
+        crypted_root_pass="$(mkpasswd "$(tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 13; echo)")"
+        sed -i "s/^root:[^:]*:/root:$crypted_root_pass:/" "$USD_MOUNT_POINT"/etc/shadow
+        echo "done."
+    fi
+
+    if [[ "$update_update" -eq 1 ]]; then
+        # update /sysupdates/update.sh on SSD from local copy
+        echo -n "Updating /sysupdates/update.sh on SSD ... "
+        cp "$(dirname "$0")/update.sh" "$SSD_MOUNT_POINT"/sysupdates/update.sh
+        chmod +x "$SSD_MOUNT_POINT"/sysupdates/update.sh
+        echo "done."
+    fi
 
     sync
     echo "All DONE, Nakamochi uSD and SSD should be ready!"

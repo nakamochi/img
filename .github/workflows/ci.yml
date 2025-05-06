@@ -18,5 +18,7 @@ jobs:
                 ./configure
                 make
                 sudo cp mkp224o /usr/local/bin
+            - name: Install other dependencies
+              run: sudo apt install whois
             - name: Run unit tests
               run: ./test/bats/bin/bats ./test/test-finalize-nakamochi.bats

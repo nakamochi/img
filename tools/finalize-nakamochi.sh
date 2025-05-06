@@ -86,6 +86,11 @@ run_main()
         fi
     fi
 
+    if ! check_exists mkpasswd; then
+        echo "Error: mkpasswd not found, try 'apt install whois'."
+        exit 1
+    fi
+
     if [[ ! -x "$(dirname "$0")/rpcauth.py" ]]; then
         echo "Error: rpcauth.py not found or is not executable."
         exit 1

@@ -292,6 +292,15 @@ run_main()
         echo "done."
     fi
 
+    # clear logs, shell history, ssh keys and networks
+    echo -n "Clearing logs, shell history, ssh keys and networks ... "
+    rm -f "$USD_MOUNT_POINT"/var/log/* 2> /dev/null
+    for d in "$USD_MOUNT_POINT"/var/log/socklog/*; do echo > "$d/current"; done
+    rm "$USD_MOUNT_POINT"/root/.bash_history
+    echo > "$USD_MOUNT_POINT"/root/.ssh/authorized_keys
+    cp "$(dirname "$0")"/../rootfiles/etc/wpa_supplicant/wpa_supplicant.conf "$USD_MOUNT_POINT"/etc/wpa_supplicant/wpa_supplicant.conf
+    echo "done."
+
     sync
     echo "All DONE, Nakamochi uSD and SSD should be ready!"
 }

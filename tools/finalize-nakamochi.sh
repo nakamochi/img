@@ -271,16 +271,16 @@ run_main()
         sed -i "s/^#?PermitRootLogin.*/PermitRootLogin yes/" "$USD_MOUNT_POINT"/etc/ssh/sshd_config
         sed -i "s/^#?PasswordAuthentication.*/PasswordAuthentication yes/" "$USD_MOUNT_POINT"/etc/ssh/sshd_config
         root_pass="nakamochi"
-        crypted_root_pass="$(mkpasswd "$root_pass")"
-        sed -i "s/^root:[^:]*:/root:$crypted_root_pass:/" "$USD_MOUNT_POINT"/etc/shadow
+        crypted_root_pass="$(mkpasswd "$root_pass" | sed 's/\$/\\\$/g')"
+        sed -i "s|^root:[^:]*:|root:$crypted_root_pass:|" "$USD_MOUNT_POINT"/etc/shadow
         echo "done."
         echo "Test image root password is $root_pass, ssh root login allowed."
     else
         echo -n "Finalizing image for production ... "
         sed -i "s/^#?PermitRootLogin.*/PermitRootLogin no/" "$USD_MOUNT_POINT"/etc/ssh/sshd_config
         sed -i "s/^#?PasswordAuthentication.*/PasswordAuthentication no/" "$USD_MOUNT_POINT"/etc/ssh/sshd_config
-        crypted_root_pass="$(mkpasswd "$(tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 13; echo)")"
-        sed -i "s/^root:[^:]*:/root:$crypted_root_pass:/" "$USD_MOUNT_POINT"/etc/shadow
+        crypted_root_pass="$(mkpasswd "$(tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 13; echo)" | sed 's/\$/\\\$/g')"
+        sed -i "s|^root:[^:]*:|root:$crypted_root_pass:|" "$USD_MOUNT_POINT"/etc/shadow
         echo "done."
     fi
 

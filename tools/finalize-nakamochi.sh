@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # shellcheck disable=SC2064
 
+base_dir="$(dirname "$(readlink -m "$0")")"
+
 check_exists()
 {
     command -v "$1" > /dev/null
@@ -91,7 +93,7 @@ run_main()
         exit 1
     fi
 
-    if [[ ! -x "$(dirname "$0")/rpcauth.py" ]]; then
+    if [[ ! -x "$base_dir/rpcauth.py" ]]; then
         echo "Error: rpcauth.py not found or is not executable."
         exit 1
     fi
@@ -231,7 +233,7 @@ run_main()
     # generate a bitcoin RPC auth
     echo -n "Generating bitcoin RPC auth ... "
     bitcoind_rpcuser="rpc"
-    rpcauth_out="$(python3 "$(dirname "$0")/rpcauth.py" $bitcoind_rpcuser)"
+    rpcauth_out="$(python3 "$base_dir/rpcauth.py" $bitcoind_rpcuser)"
     if [[ -z $rpcauth_out ]]; then
         echo ""
         echo "Error: failed to generate bitcoin RPC auth."
@@ -287,10 +289,20 @@ run_main()
     if [[ "$update_update" -eq 1 ]]; then
         # update /sysupdates/update.sh on SSD from local copy
         echo -n "Updating /sysupdates/update.sh on SSD ... "
-        cp "$(dirname "$0")/update.sh" "$SSD_MOUNT_POINT"/sysupdates/update.sh
+        cp "$base_dir/update.sh" "$SSD_MOUNT_POINT"/sysupdates/update.sh
         chmod +x "$SSD_MOUNT_POINT"/sysupdates/update.sh
         echo "done."
     fi
+
+    # clear logs, shell history, ssh keys and networks
+    echo -n "Clearing logs, shell history, ssh keys and networks ... "
+    rm -f "$USD_MOUNT_POINT"/var/log/* 2> /dev/null
+    for d in "$USD_MOUNT_POINT"/var/log/socklog/*; do echo > "$d/current"; done
+    rm -f "$USD_MOUNT_POINT"/root/.bash_history
+    mkdir -p "$USD_MOUNT_POINT"/root/.ssh
+    echo > "$USD_MOUNT_POINT"/root/.ssh/authorized_keys
+    cp "$base_dir"/../rootfiles/etc/wpa_supplicant/wpa_supplicant.conf "$USD_MOUNT_POINT"/etc/wpa_supplicant/wpa_supplicant.conf
+    echo "done."
 
     sync
     echo "All DONE, Nakamochi uSD and SSD should be ready!"

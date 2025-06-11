@@ -37,17 +37,19 @@ patch_lnd_conf()
 run_main()
 {
     if [[ -z $2 ]] || [[ "$1" == "--help" ]]; then
-        echo "Usage: $(basename "$0") [options] /dev/sda2 /dev/sdb1 [/mnt/usd [/mnt/ssd]]"
+        echo "Usage: $(basename "$0") [options] /dev/sda2 /dev/sdb1 [/mnt/usd [/mnt/ssd [ssh_authorized_key]]]"
         echo "Where:"
-        echo "  /dev/sda2       - uSD card root partition (use '-' to not mount)"
-        echo "  /dev/sdb1       - SSD data partition (use '-' to not mount)"
-        echo "  /mnt/usd        - uSD card mount point / directory"
-        echo "  /mnt/ssd        - SSD mount point / directory"
+        echo "  /dev/sda2           - uSD card root partition (use '-' to not mount)"
+        echo "  /dev/sdb1           - SSD data partition (use '-' to not mount)"
+        echo "  /mnt/usd            - uSD card mount point / directory"
+        echo "  /mnt/ssd            - SSD mount point / directory"
+        echo "  ssh_authorized_key  - optional SSH authorized pubkey (filename) to add to root user"
         echo "Options:"
-        echo "  --skip-mkp224o  - skip generating onion keys (requires them to be already present on SSD)"
-        echo "  --test-image    - configure image for testing (allows ssh root access with password)"
+        echo "  --skip-mkp224o      - skip generating onion keys (requires them to be already present on SSD)"
+        echo "  --skip-passwd       - skip setting root password (when mkpasswd is not available)"
+        echo "  --test-image        - configure image for testing (allows ssh root access with password)"
         # FixMe: --update-update is temporary hack, remove after https://github.com/nakamochi/sysupdates/pull/8 is merged.
-        echo "  --update-update - update /sysupdates/update.sh on SSD from local copy"
+        echo "  --update-update     - update /sysupdates/update.sh on SSD from local copy"
         echo "Example: $(basename "$0") /dev/sdc2 /dev/sdd1"
         exit 1
     fi
@@ -58,12 +60,17 @@ run_main()
     fi
 
     skip_mkp224o=0
+    skip_passwd=0
     test_image=0
     update_update=0
     while [[ "$1" == --* ]]; do
         case "$1" in
             --skip-mkp224o)
                 skip_mkp224o=1
+                shift
+                ;;
+            --skip-passwd)
+                skip_passwd=1
                 shift
                 ;;
             --test-image)
@@ -88,9 +95,11 @@ run_main()
         fi
     fi
 
-    if ! check_exists mkpasswd; then
-        echo "Error: mkpasswd not found, try 'apt install whois'."
-        exit 1
+    if [[ "$skip_passwd" -eq 0 ]]; then
+        if ! check_exists mkpasswd; then
+            echo "Error: mkpasswd is not installed, try 'apt install whois'."
+            exit 1
+        fi
     fi
 
     if [[ ! -x "$base_dir/rpcauth.py" ]]; then
@@ -102,6 +111,7 @@ run_main()
     SSD_DEVICE="$2"
     USD_MOUNT_POINT="${3:-/mnt/usd}"
     SSD_MOUNT_POINT="${4:-/mnt/ssd}"
+    SSH_AUTHORIZED_KEY="$5"
 
     # "-" is a special case for tests without automounting.
 
@@ -112,6 +122,11 @@ run_main()
 
     if [[ "$SSD_DEVICE" != "-" ]] && [[ ! -b "$SSD_DEVICE" ]]; then
         echo "Error: device $SSD_DEVICE does not exist."
+        exit 1
+    fi
+
+    if [[ -n "$SSH_AUTHORIZED_KEY" ]] && [[ ! -f "$SSH_AUTHORIZED_KEY" ]]; then
+        echo "Error: SSH authorized pubkey file $SSH_AUTHORIZED_KEY does not exist."
         exit 1
     fi
 
@@ -272,17 +287,23 @@ run_main()
         echo -n "Finalizing image for testing ... "
         sed -i "s/^#?PermitRootLogin.*/PermitRootLogin yes/" "$USD_MOUNT_POINT"/etc/ssh/sshd_config
         sed -i "s/^#?PasswordAuthentication.*/PasswordAuthentication yes/" "$USD_MOUNT_POINT"/etc/ssh/sshd_config
-        root_pass="nakamochi"
-        crypted_root_pass="$(mkpasswd "$root_pass" | sed 's/\$/\\\$/g')"
-        sed -i "s|^root:[^:]*:|root:$crypted_root_pass:|" "$USD_MOUNT_POINT"/etc/shadow
+        if [[ "$skip_passwd" -eq 0 ]]; then
+            root_pass="nakamochi"
+            crypted_root_pass="$(mkpasswd "$root_pass" | sed 's/\$/\\\$/g')"
+            sed -i "s|^root:[^:]*:|root:$crypted_root_pass:|" "$USD_MOUNT_POINT"/etc/shadow
+        fi
         echo "done."
-        echo "Test image root password is $root_pass, ssh root login allowed."
+        if [[ "$skip_passwd" -eq 0 ]]; then
+            echo "Test image root password is $root_pass, ssh root login allowed."
+        fi
     else
         echo -n "Finalizing image for production ... "
         sed -i "s/^#?PermitRootLogin.*/PermitRootLogin no/" "$USD_MOUNT_POINT"/etc/ssh/sshd_config
         sed -i "s/^#?PasswordAuthentication.*/PasswordAuthentication no/" "$USD_MOUNT_POINT"/etc/ssh/sshd_config
-        crypted_root_pass="$(mkpasswd "$(tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 13; echo)" | sed 's/\$/\\\$/g')"
-        sed -i "s|^root:[^:]*:|root:$crypted_root_pass:|" "$USD_MOUNT_POINT"/etc/shadow
+        if [[ "$skip_passwd" -eq 0 ]]; then
+            crypted_root_pass="$(mkpasswd "$(tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 13; echo)" | sed 's/\$/\\\$/g')"
+            sed -i "s|^root:[^:]*:|root:$crypted_root_pass:|" "$USD_MOUNT_POINT"/etc/shadow
+        fi
         echo "done."
     fi
 
@@ -303,6 +324,15 @@ run_main()
     echo > "$USD_MOUNT_POINT"/root/.ssh/authorized_keys
     cp "$base_dir"/../rootfiles/etc/wpa_supplicant/wpa_supplicant.conf "$USD_MOUNT_POINT"/etc/wpa_supplicant/wpa_supplicant.conf
     echo "done."
+
+    if [[ -n "$SSH_AUTHORIZED_KEY" ]] && [[ -f "$SSH_AUTHORIZED_KEY" ]]; then
+        # add SSH authorized key to root user
+        echo -n "Adding SSH authorized key from $SSH_AUTHORIZED_KEY ... "
+        mkdir -p "$USD_MOUNT_POINT"/root/.ssh
+        cat "$SSH_AUTHORIZED_KEY" >> "$USD_MOUNT_POINT"/root/.ssh/authorized_keys
+        chmod 600 "$USD_MOUNT_POINT"/root/.ssh/authorized_keys
+        echo "done."
+    fi
 
     sync
     echo "All DONE, Nakamochi uSD and SSD should be ready!"

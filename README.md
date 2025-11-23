@@ -86,7 +86,7 @@ set up the SSD:
 
 add swap:
 
-    dd if=/dev/zero of=/ssd/swapfile bs=1M count=2048
+    dd if=/dev/zero of=/ssd/swapfile bs=1M count=4096
     chmod 600 /ssd/swapfile
     mkswap /ssd/swapfile
     echo "/ssd/swapfile   none    swap    sw,nofail 0 0" >> /etc/fstab

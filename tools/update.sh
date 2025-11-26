@@ -1,6 +1,4 @@
 #!/bin/sh
-# shellcheck disable=SC2181
-
 # https://github.com/nakamochi/sysupdates
 # pull changes from a remote git repo and run the "apply" script.
 # commits are expected to be signed by gpg keys with a sufficient
@@ -35,17 +33,18 @@ date > "$LOGFILE"
 
 # fetch updates from remote
 cd "$REPODIR" || exit 1
-{
-echo "Fetching updates from $REMOTE_URL, branch $BRANCH"
-git remote set-url origin "$REMOTE_URL"
-git fetch origin             # in case the refspec is unknown locally yet
-git reset --hard HEAD        # remove local changes
-git clean -fd                # force-delete untracked files
-git checkout "$BRANCH"
-git pull --verify-signatures
-} >> "$LOGFILE" 2>&1
-if [ $? -ne 0 ]; then
-    echo "ERROR: git pull failed"
+if ! {
+    echo "Fetching updates from $REMOTE_URL, branch $BRANCH" &&
+    git remote set-url origin "$REMOTE_URL" &&
+    git fetch origin &&          # in case the refspec is unknown locally yet
+    git reset --hard HEAD &&     # remove local changes
+    git clean -fd &&             # force-delete untracked files
+    git checkout "$BRANCH" &&
+    git pull --rebase --verify-signatures &&
+    git submodule sync --recursive &&
+    git submodule update --init --recursive
+} >> "$LOGFILE" 2>&1 ; then
+    echo "ERROR: repository update failed"
     cat "$LOGFILE"
     exit 1
 fi
@@ -57,4 +56,16 @@ if ! ./apply.sh >> "$LOGFILE" 2>&1; then
     echo "ERROR: apply failed"
     cat "$LOGFILE"
     exit 1
+else
+    # read commit from $REPODIR even if apply.sh changed CWD; write atomically and log failures
+    if hash="$(git -C "$REPODIR" rev-parse --short=12 HEAD 2>>"$LOGFILE")"; then
+        tmp=/etc/sysupdates-applied.$$
+        printf '%s\n' "$hash" > "$tmp" &&
+        chmod 0644 "$tmp" &&
+        mv -f "$tmp" /etc/sysupdates-applied
+    else
+        echo "ERROR: unable to determine current git commit" >> "$LOGFILE"
+        cat "$LOGFILE"
+        exit 1
+    fi
 fi

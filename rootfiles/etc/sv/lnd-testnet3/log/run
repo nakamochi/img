@@ -1,0 +1,2 @@
+#!/bin/sh
+exec vlogger -t lnd-testnet3 -p daemon

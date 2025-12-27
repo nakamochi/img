@@ -1,0 +1,2 @@
+#!/bin/sh
+exec chpst -u bitcoind /home/bitcoind/bitcoin-26.1/bin/bitcoind -conf=/home/bitcoind/testnet3.conf 2>&1

@@ -194,6 +194,7 @@ run_main()
     fi
 
     # check for existing lightning wallet
+    # only check for mainnet wallet as accidentally deleting it might lose funds, other stuff is not so important
     if [[ -f "$SSD_MOUNT_POINT/lnd/data/chain/bitcoin/mainnet/wallet.db" ]]; then
         echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
         echo "Existing lightning wallet found on SSD."
@@ -206,6 +207,7 @@ run_main()
             echo -n "Removing wallet unlock file and clearing LND config ... "
             rm -f "$USD_MOUNT_POINT"/home/lnd/walletunlock.txt
             sed -i "s/^wallet-unlock-password-file=.*/;wallet-unlock-password-file=\/home\/lnd\/walletunlock.txt/" "$USD_MOUNT_POINT"/home/lnd/lnd.mainnet.conf
+            sed -i "s/^wallet-unlock-password-file=.*/;wallet-unlock-password-file=\/home\/lnd\/walletunlock.txt/" "$USD_MOUNT_POINT"/home/lnd/lnd.testnet3.conf
             echo "done."
         else
             echo "Aborted."
@@ -230,7 +232,9 @@ run_main()
         echo -n "Generating onion services ... "
         onion_tmp_dir="$(mktemp -d)"
         mkp224o -d "$onion_tmp_dir" -n 1 b
+        mkp224o -d "$onion_tmp_dir" -n 1 tb
         mkp224o -d "$onion_tmp_dir" -n 1 l
+        mkp224o -d "$onion_tmp_dir" -n 1 tl
         echo "done."
     fi
 
@@ -239,7 +243,9 @@ run_main()
     if [[ "$skip_mkp224o" -eq 0 ]]; then
         mkdir -p "$SSD_MOUNT_POINT"/tor/{bitcoind,lnd}
         cp -r "$onion_tmp_dir"/b*/* "$SSD_MOUNT_POINT"/tor/bitcoind/
+        cp -r "$onion_tmp_dir"/tb*/* "$SSD_MOUNT_POINT"/tor/bitcoind-testnet3/
         cp -r "$onion_tmp_dir"/l*/* "$SSD_MOUNT_POINT"/tor/lnd/
+        cp -r "$onion_tmp_dir"/tl*/* "$SSD_MOUNT_POINT"/tor/lnd-testnet3/
     fi
     onion_user_group="$(grep tor "$USD_MOUNT_POINT"/etc/passwd | cut -d: -f 3-4)"
     chown -R "$onion_user_group" "$SSD_MOUNT_POINT"/tor
@@ -259,20 +265,32 @@ run_main()
     echo "done."
 
     # modify bitcoin configuration
-    bitcoind_conf="$USD_MOUNT_POINT"/home/bitcoind/mainnet.conf
-    echo -n "Finalizing bitcoin configuration ($bitcoind_conf) ..."
-    bitcoind_onion_hostname="$(cat "$SSD_MOUNT_POINT"/tor/bitcoind/hostname)"
-    patch_bitcoind_conf "$bitcoind_conf" "$bitcoind_rpcauth" "$bitcoind_rpcpass" "$bitcoind_onion_hostname"
-    echo "done."
-    grep rpc "$bitcoind_conf"
+    for bitcoind_network in mainnet testnet3; do
+        bitcoind_conf="$USD_MOUNT_POINT"/home/bitcoind/$bitcoind_network.conf
+        echo -n "Finalizing bitcoin configuration ($bitcoind_conf) ..."
+        if [[ "$bitcoind_network" == "mainnet" ]]; then
+            bitcoind_onion_hostname="$(cat "$SSD_MOUNT_POINT"/tor/bitcoind/hostname)"
+        else
+            bitcoind_onion_hostname="$(cat "$SSD_MOUNT_POINT"/tor/bitcoind-$bitcoind_network/hostname)"
+        fi
+        patch_bitcoind_conf "$bitcoind_conf" "$bitcoind_rpcauth" "$bitcoind_rpcpass" "$bitcoind_onion_hostname"
+        echo "done."
+        grep rpc "$bitcoind_conf"
+    done
 
     # modify lnd configuration
-    lnd_conf="$USD_MOUNT_POINT"/home/lnd/lnd.mainnet.conf
-    echo -n "Finalizing lnd configuration ($lnd_conf) ..."
-    lnd_onion_hostname="$(cat "$SSD_MOUNT_POINT"/tor/lnd/hostname)"
-    patch_lnd_conf "$lnd_conf" "$bitcoind_rpcuser" "$bitcoind_rpcpass" "$lnd_onion_hostname"
-    echo "done."
-    grep rpc "$lnd_conf"
+    for bitcoind_network in mainnet testnet3; do
+        lnd_conf="$USD_MOUNT_POINT"/home/lnd/lnd.$bitcoind_network.conf
+        echo -n "Finalizing lnd configuration ($lnd_conf) ..."
+        if [[ "$bitcoind_network" == "mainnet" ]]; then
+            lnd_onion_hostname="$(cat "$SSD_MOUNT_POINT"/tor/lnd/hostname)"
+        else
+            lnd_onion_hostname="$(cat "$SSD_MOUNT_POINT"/tor/lnd-$bitcoind_network/hostname)"
+        fi
+        patch_lnd_conf "$lnd_conf" "$bitcoind_rpcuser" "$bitcoind_rpcpass" "$lnd_onion_hostname"
+        echo "done."
+        grep rpc "$lnd_conf"
+    done
 
     # fix bitcoin and lnd user/group on SSD to match uSD (just in case)
     echo -n "Checking / fixing bitcoin and lnd user/group on SSD ... "

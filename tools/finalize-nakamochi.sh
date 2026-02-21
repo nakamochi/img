@@ -227,7 +227,7 @@ run_main()
 
     if [[ "$skip_mkp224o" -eq 0 ]]; then
         # generate 2 onion services, one for bitcoind and one for lnd
-        echo -n "Generating onion services ... "
+        echo -n "Generating bitcoind and lnd onion services ... "
         onion_tmp_dir="$(mktemp -d)"
         mkp224o -d "$onion_tmp_dir" -n 1 b
         mkp224o -d "$onion_tmp_dir" -n 1 l
@@ -296,6 +296,24 @@ run_main()
         if [[ "$skip_passwd" -eq 0 ]]; then
             echo "Test image root password is $root_pass, ssh root login allowed."
         fi
+        if [[ "$skip_mkp224o" -eq 0 ]]; then
+            echo -n "Creating ssh onion service ... "
+            mkp224o -d "$onion_tmp_dir" -n 1 s
+            mkdir -p "$SSD_MOUNT_POINT"/tor/ssh
+            cp -r "$onion_tmp_dir"/s*/* "$SSD_MOUNT_POINT"/tor/ssh/
+            onion_user_group="$(grep tor "$USD_MOUNT_POINT"/etc/passwd | cut -d: -f 3-4)"
+            chown -R "$onion_user_group" "$SSD_MOUNT_POINT"/tor/ssh
+            if ! grep -qs "HiddenServicePort 22" "$USD_MOUNT_POINT"/etc/tor/torrc; then
+                {
+                    echo "# Hidden Service SSH server"
+                    echo "HiddenServiceDir /ssd/tor/ssh"
+                    echo "HiddenServiceVersion 3"
+                    echo "HiddenServicePort 22 127.0.0.1:22"
+                } >> "$USD_MOUNT_POINT"/etc/tor/torrc
+            fi
+            echo "done."
+            sed 's/^/SSH onion service hostname: /' < "$SSD_MOUNT_POINT/tor/ssh/hostname"
+        fi
     else
         echo -n "Finalizing image for production ... "
         sed -i "s/^#?PermitRootLogin.*/PermitRootLogin no/" "$USD_MOUNT_POINT"/etc/ssh/sshd_config
@@ -334,6 +352,7 @@ run_main()
         echo "done."
     fi
 
+    rm -rf "$onion_tmp_dir"
     sync
     echo "All DONE, Nakamochi uSD and SSD should be ready!"
 }

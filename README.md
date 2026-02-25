@@ -139,7 +139,7 @@ replace `${rpcauth}` with the generated password and `${hostname.onion}` with
 
 add ndg UI user and enable its service:
 
-    useradd -d /home/uiuser -M -c 'nakamochi ui' -s /sbin/nologin uiuser
+    useradd -d /home/uiuser -M -c 'nakamochi ui' -s /sbin/nologin -G input,video uiuser
     ln -s /etc/sv/nd /var/service/
 
 the UI should show up on the screen, although no data is shown since bitcoind and lnd

@@ -118,7 +118,7 @@ set up bitcoin core configuration:
 
 set up lnd lightning configuration:
 
-    useradd -r -s /sbin/nologin -m lnd
+    useradd -r -s /sbin/nologin -m lnd -G tor
     mkdir /ssd/lnd
     chown -R lnd:lnd /ssd/lnd
     chmod -R 750 /home/lnd /ssd/lnd

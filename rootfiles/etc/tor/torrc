@@ -8,6 +8,10 @@ User tor
 Log notice syslog
 DataDirectory /ssd/tor
 
+ControlPort 9051
+CookieAuthentication 1
+CookieAuthFileGroupReadable 1
+
 # bitcoin P2P service over tor
 HiddenServiceDir /ssd/tor/bitcoind/
 HiddenServicePort 8333 127.0.0.1:8334

@@ -159,11 +159,13 @@ accepted:
         echo -e "trust\n5\ny\n" | gpg --command-fd 0 --expert --edit-key $keyid
     done
 
-enable `bitcoind` and `lnd` system services, and run sysupdates script manually
-for the first time. it should finish up all the remaining configuration bits:
+run the sysupdates script manually for the first time; it should finish up all the
+remaining configuration bits and install the `bitcoind`/`lnd` runit service
+definitions (for example, `/etc/sv/{bitcoind,lnd}/run`). afterwards, enable the
+`bitcoind` and `lnd` system services by creating the `/var/service` symlinks:
 
-    for s in bitcoind lnd; do ln -s /etc/sv/$s /var/service/; done
     /ssd/sysupdates/update.sh master
+    for s in bitcoind lnd; do ln -s /etc/sv/$s /var/service/; done
 
 if setting up a dev device, replace `master` with `dev`.
 

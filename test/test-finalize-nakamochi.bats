@@ -20,8 +20,7 @@ bitcoind_rpcpass_2='ILXudrSSgVV7bmxGoO9H7prg9YXEd2e3mZoolTW-oOQ='
 bitcoind_onion_2='bhyhhvggguv2iprx23ryev3tsy2vcvlx43qfdes3zpbth464nl6mecad.onion'
 lnd_onion_2='l4jmbelb62qfwfmqequ2xyltjxyv3cc2wdjsvsst3p57c2fw3y2ojpqd.onion'
 
-setup()
-{
+setup() {
     tempdir="$(mktemp -d)"
     export tempdir
 }
@@ -83,7 +82,6 @@ setup()
     rm -rf "$temp_ssd"
 }
 
-teardown()
-{
+teardown() {
     rm -rf "$tempdir"
 }

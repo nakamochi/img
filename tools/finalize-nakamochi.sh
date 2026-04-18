@@ -3,13 +3,11 @@
 
 base_dir="$(dirname "$(readlink -m "$0")")"
 
-check_exists()
-{
-    command -v "$1" > /dev/null
+check_exists() {
+    command -v "$1" >/dev/null
 }
 
-patch_bitcoind_conf()
-{
+patch_bitcoind_conf() {
     bitcoind_conf="$1"
     rpcauth="$2"
     bitcoind_rpcpass="$3"
@@ -22,8 +20,7 @@ patch_bitcoind_conf()
     sed -i "s/^externalip=.*/externalip=$bitcoind_onion_hostname/" "$bitcoind_conf"
 }
 
-patch_lnd_conf()
-{
+patch_lnd_conf() {
     lnd_conf="$1"
     bitcoind_rpcuser="$2"
     bitcoind_rpcpass="$3"
@@ -34,8 +31,7 @@ patch_lnd_conf()
     sed -i "s/^externalhosts=.*/externalhosts=$lnd_onion_hostname/" "$lnd_conf"
 }
 
-run_main()
-{
+run_main() {
     if [[ -z $2 ]] || [[ "$1" == "--help" ]]; then
         echo "Usage: $(basename "$0") [options] /dev/sda2 /dev/sdb1 [/mnt/usd [/mnt/ssd [ssh_authorized_key]]]"
         echo "Where:"
@@ -222,8 +218,8 @@ run_main()
     # detected that mismatched uSD and SSD are used on the same Nakamochi.
     NAKAMOCHI_ID="$(uuidgen)"
     echo "Nakamochi ID: $NAKAMOCHI_ID"
-    echo "$NAKAMOCHI_ID" > "$USD_MOUNT_POINT"/etc/nakamochi-id
-    echo "$NAKAMOCHI_ID" > "$SSD_MOUNT_POINT"/nakamochi-id
+    echo "$NAKAMOCHI_ID" >"$USD_MOUNT_POINT"/etc/nakamochi-id
+    echo "$NAKAMOCHI_ID" >"$SSD_MOUNT_POINT"/nakamochi-id
 
     if [[ "$skip_mkp224o" -eq 0 ]]; then
         # generate 2 onion services, one for bitcoind and one for lnd
@@ -254,8 +250,8 @@ run_main()
         echo "Error: failed to generate bitcoin RPC auth."
         exit 1
     fi
-    bitcoind_rpcauth="$(grep "rpcauth=" <<< "$rpcauth_out")"
-    bitcoind_rpcpass="$(tail -n 1 <<< "$rpcauth_out")"
+    bitcoind_rpcauth="$(grep "rpcauth=" <<<"$rpcauth_out")"
+    bitcoind_rpcpass="$(tail -n 1 <<<"$rpcauth_out")"
     echo "done."
 
     # modify bitcoin configuration
@@ -301,7 +297,10 @@ run_main()
         sed -i "s/^#?PermitRootLogin.*/PermitRootLogin no/" "$USD_MOUNT_POINT"/etc/ssh/sshd_config
         sed -i "s/^#?PasswordAuthentication.*/PasswordAuthentication no/" "$USD_MOUNT_POINT"/etc/ssh/sshd_config
         if [[ "$skip_passwd" -eq 0 ]]; then
-            crypted_root_pass="$(mkpasswd "$(tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 13; echo)" | sed 's/\$/\\\$/g')"
+            crypted_root_pass="$(mkpasswd "$(
+                tr -dc 'A-Za-z0-9' </dev/urandom | head -c 13
+                echo
+            )" | sed 's/\$/\\\$/g')"
             sed -i "s|^root:[^:]*:|root:$crypted_root_pass:|" "$USD_MOUNT_POINT"/etc/shadow
         fi
         echo "done."
@@ -317,11 +316,11 @@ run_main()
 
     # clear logs, shell history, ssh keys and networks
     echo -n "Clearing logs, shell history, ssh keys and networks ... "
-    rm -f "$USD_MOUNT_POINT"/var/log/* 2> /dev/null
-    for d in "$USD_MOUNT_POINT"/var/log/socklog/*; do echo > "$d/current"; done
+    rm -f "$USD_MOUNT_POINT"/var/log/* 2>/dev/null
+    for d in "$USD_MOUNT_POINT"/var/log/socklog/*; do echo >"$d/current"; done
     rm -f "$USD_MOUNT_POINT"/root/.bash_history
     mkdir -p "$USD_MOUNT_POINT"/root/.ssh
-    echo > "$USD_MOUNT_POINT"/root/.ssh/authorized_keys
+    echo >"$USD_MOUNT_POINT"/root/.ssh/authorized_keys
     cp "$base_dir"/../rootfiles/etc/wpa_supplicant/wpa_supplicant.conf "$USD_MOUNT_POINT"/etc/wpa_supplicant/wpa_supplicant.conf
     echo "done."
 
@@ -329,7 +328,7 @@ run_main()
         # add SSH authorized key to root user
         echo -n "Adding SSH authorized key from $SSH_AUTHORIZED_KEY ... "
         mkdir -p "$USD_MOUNT_POINT"/root/.ssh
-        cat "$SSH_AUTHORIZED_KEY" >> "$USD_MOUNT_POINT"/root/.ssh/authorized_keys
+        cat "$SSH_AUTHORIZED_KEY" >>"$USD_MOUNT_POINT"/root/.ssh/authorized_keys
         chmod 600 "$USD_MOUNT_POINT"/root/.ssh/authorized_keys
         echo "done."
     fi

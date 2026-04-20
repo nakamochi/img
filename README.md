@@ -19,6 +19,7 @@ grab latest ndg release from https://github.com/nakamochi/ndg/releases and creat
 
     cd /mnt/img
     mkdir -p home/uiuser/v0.9.0
+    gpg --verify /path/to/ndg-v0.9.0-aarch64.tar.gz
     tar -C home/uiuser/v0.9.0 --no-same-owner -xf /path/to/ndg-v0.9.0-aarch64.tar.gz
     mkdir etc/sv/nd
     cp -r repo/rootfiles/etc/sv/nd/* etc/sv/nd/

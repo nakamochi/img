@@ -1,2 +1,2 @@
 #!/bin/sh
-exec /home/uiuser/v0.8.3/nd -conf /home/uiuser/conf.json -gui /home/uiuser/v0.8.3/ngui -gui-user uiuser -wpa /var/run/wpa_supplicant/wlan0 2>&1
+exec /home/uiuser/v0.9.0/nd -conf /home/uiuser/conf.json -gui /home/uiuser/v0.9.0/ngui -gui-user uiuser -wpa /var/run/wpa_supplicant/wlan0 2>&1

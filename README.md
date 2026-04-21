@@ -64,6 +64,7 @@ fix system date/time (otherwise there will be certificate errrors):
 update the system, reboot if requested and install system logging:
 
     xbps-install -Su
+    xbps-install -u xbps
     xbps-install socklog-void
     ln -s /etc/sv/socklog-unix /var/service/
     ln -s /etc/sv/nanoklogd /var/service/

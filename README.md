@@ -123,7 +123,7 @@ set up lnd lightning configuration:
     # copy lnd config file
     scp rootfiles/home/lnd/lnd.mainnet.conf root@target:/home/lnd/
     chmod 640 /home/lnd/lnd.mainnet.conf
-    chgrp lnd /home/lnd/lnd.mainnet.conf
+    chown lnd:lnd /home/lnd/lnd.mainnet.conf
 
 generate bitcoind RPC auth credentials:
 

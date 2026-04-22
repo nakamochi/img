@@ -140,9 +140,6 @@ add ndg UI user and enable its service:
     useradd -d /home/uiuser -M -c 'nakamochi ui' -s /sbin/nologin -G input,video uiuser
     ln -s /etc/sv/nd /var/service/
 
-the UI should show up on the screen, although no data is shown since bitcoind and lnd
-are still down.
-
 set up automatic sys updates:
 
     xbps-install git gnupg
@@ -167,18 +164,9 @@ definitions (for example, `/etc/sv/{bitcoind,lnd}/run`). afterwards, enable the
 
 if setting up a dev device, replace `master` with `dev`.
 
-finally, adjust `/boot/config.txt` to the following:
+copy `/boot/config.txt` and `/boot/cmdline.txt`:
 
-    disable_splash=1
-    dtparam=audio=off
-    gpu_mem=128
-    framebuffer_depth=32
-    framebuffer_ignore_alpha=1
-    dtoverlay=vc4-fkms-v3d
-
-and `/boot/cmdline.txt`:
-
-    root=/dev/mmcblk0p2 rw rootwait console=ttyAMA0,115200 kgdboc=ttyAMA0,115200 console=tty6 smsc95xx.turbo_mode=N dwc_otg.lpm_enable=0 loglevel=4 elevator=noop vt.global_cursor_default=0
+    scp rootfiles/boot/*.txt root@target:/boot/
 
 now, reboot and ssh again into the devices. make sure all services are running.
 

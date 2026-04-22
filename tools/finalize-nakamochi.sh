@@ -172,8 +172,8 @@ run_main() {
     fi
 
     # check SSD
-    if [[ ! -d "$SSD_MOUNT_POINT"/bitcoind/mainnet/blocks ]]; then
-        echo "Error: $SSD_MOUNT_POINT/bitcoind/mainnet/blocks does not exist, is not a correctly prepared SSD."
+    if [[ ! -d "$SSD_MOUNT_POINT"/bitcoind/mainnet ]]; then
+        echo "Error: $SSD_MOUNT_POINT/bitcoind/mainnet does not exist, is not a correctly prepared SSD."
         exit 1
     fi
 

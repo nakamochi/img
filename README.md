@@ -60,6 +60,7 @@ update the system, reboot if requested and install system logging:
     xbps-install -Su
     xbps-install -u xbps
     xbps-install socklog-void
+    scp rootfiles/etc/sv/socklog-unix/log/run root@target:/etc/sv/socklog-unix/log/
     ln -s /etc/sv/socklog-unix /var/service/
     ln -s /etc/sv/nanoklogd /var/service/
 

@@ -26,7 +26,7 @@ run_main() {
     while read -r part mnt; do
         echo -n "Unmounting $part from $mnt... "
         umount "$part"
-	echo "done."
+        echo "done."
     done < <(lsblk -nrpo NAME,MOUNTPOINT "$device" | awk '$2 != "" && $1 != dev { print $1, $2 }' dev="$device")
     echo "Flashing $image to $device..."
     dd if="$image" of="$device" bs=4M status=progress
